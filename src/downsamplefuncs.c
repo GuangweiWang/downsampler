@@ -71,6 +71,7 @@ void DyadicBilinearDownsampler_c(uint8_t* pDst, const int32_t kiDstStride,
 	}
 }
 
+#if 0
 void BilinearDownsamplerQuarter_c(unsigned char* dst, const int dst_stride,
 	unsigned char* src, const int src_stride,
 	const int src_width, const int src_height)
@@ -124,6 +125,63 @@ void BilinearDownsamplerThird_c(unsigned char* dst, const int dst_stride,
 		src_line += src_stridex3;
 	}
 }
+#endif
+
+#if 1
+void BilinearDownsamplerQuarter_c(unsigned char* dst, const int dst_stride,
+	unsigned char* src, const int src_stride,
+	const int src_width, const int src_height)
+
+{
+	unsigned char *dst_line = dst;
+	unsigned char *src_line = src;
+	const int src_stride4 = src_stride << 2;
+	const int dst_width = src_width >> 2;
+	const int dst_height = src_height >> 2;
+	int j = 0, i = 0;
+
+	for (j = 0; j < dst_height; j++)
+	{
+		for (i = 0; i < dst_width; i++)
+		{
+			const int src_x = i << 2;
+			const int temp_row1 = (src_line[src_x] + src_line[src_x + 1] + 1) >> 1;
+			const int temp_row2 = (src_line[src_x + src_stride] + src_line[src_x + src_stride + 1] + 1) >> 1;
+
+			dst_line[i] = (unsigned char)((temp_row1 + temp_row2 + 1) >> 1);
+		}
+		dst_line += dst_stride;
+		src_line += src_stride4;
+	}
+}
+
+void BilinearDownsamplerOneThird_c(unsigned char* dst, const int dst_stride,
+	unsigned char* src, const int src_stride,
+	const int src_width, const int src_height)
+
+{
+	unsigned char *dst_line = dst;
+	unsigned char *src_line = src;
+	const int src_stridex3 = src_stride * 3;
+	const int dst_width = src_width/3;
+	const int dst_height = src_height/3;
+	int j = 0, i = 0;
+
+	for (j = 0; j < dst_height; j++)
+	{
+		for (i = 0; i < dst_width; i++)
+		{
+			const int src_x = i * 3 ;
+			const int temp_row1 = (src_line[src_x] + src_line[src_x + 1] + 1) >> 1;
+			const int temp_row2 = (src_line[src_x + src_stride] + src_line[src_x + src_stride + 1] + 1) >> 1;
+
+			dst_line[i] = (unsigned char)((temp_row1 + temp_row2 + 1) >> 1);
+		}
+		dst_line += dst_stride;
+		src_line += src_stridex3;
+	}
+}
+#endif
 
 void GeneralBilinearFastDownsampler_c(uint8_t* pDst, const int32_t kiDstStride, const int32_t kiDstWidth,
 	const int32_t kiDstHeight,

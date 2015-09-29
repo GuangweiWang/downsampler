@@ -56,7 +56,7 @@ static SDownsampleFuncs downsample_funs_c[] = {
 	{ DyadicBilinearDownsampler_c, 
 	GeneralBilinearFastDownsampler_c, GeneralBilinearAccurateDownsampler_c },
 
-	{ BilinearDownsamplerThird_c, 
+	{ BilinearDownsamplerOneThird_c, 
 	GeneralBilinearFastDownsampler_c, GeneralBilinearAccurateDownsampler_c },
 
 	{ BilinearDownsamplerQuarter_c,
@@ -65,7 +65,7 @@ static SDownsampleFuncs downsample_funs_c[] = {
 
 static int getIndex[] = {0,0,1,2,3};
 
-int getDownsampleRatio(uint64_t srcFrameSize, uint64_t dstFrameSize){
+DOWNSAMPLE_RATIO getDownsampleRatio(uint64_t srcFrameSize, uint64_t dstFrameSize){
 	DOWNSAMPLE_RATIO ret;
 	float ratio = 1.0;
 	ratio = ((float)srcFrameSize / (float)dstFrameSize);
@@ -111,10 +111,10 @@ void compareOutput(FILE *flog, uint8_t *dst_o, uint8_t *dst_n, int dst_width, in
 #endif
 }
 
-int main (int Argc, char **Argv){
+int main (int argc, char **argv){
 	int index;
-	int bufPost = 0;
-	int inFileSize = 0;
+	//int bufPost = 0;
+	//int inFileSize = 0;
 	int size = 0;
 	int frameNum = 0;
 	unsigned int compareTwoFuns = 0;
@@ -140,21 +140,21 @@ int main (int Argc, char **Argv){
 	uint64_t inFrameSizeV = 0, outFrameSizeV = 0;
 
 	//parse command parameter
-	if (Argc != 8){
+	if (argc != 8){
 		printf("usage:\ndownsampler inFileName.yuv src_width src_height outFileName_general.yuv outFileName_specific.yuv dst_width dst_height\n");
 		printf("Example:\ndownsampler infile.yuv 640 360 outfile_general.yuv outfile_specific.yuv 160 90\n");
 		return -1;
 	}
 	else{
-		inFileName = Argv[1];
-		SrcPix.width = atoi(Argv[2]);
-		SrcPix.height = atoi(Argv[3]);
+		inFileName = argv[1];
+		SrcPix.width = atoi(argv[2]);
+		SrcPix.height = atoi(argv[3]);
 
-		//outFileName = Argv[4];
-		outFileNameA = Argv[4];
-		outFileNameB = Argv[5];
-		DstPix.width = atoi(Argv[6]);
-		DstPix.height = atoi(Argv[7]);
+		//outFileName = argv[4];
+		outFileNameA = argv[4];
+		outFileNameB = argv[5];
+		DstPix.width = atoi(argv[6]);
+		DstPix.height = atoi(argv[7]);
 	}
 
 	if(DstPix.width == 0 || DstPix.height == 0)
@@ -169,17 +169,17 @@ int main (int Argc, char **Argv){
 	outFrameSizeY = DstPix.width * DstPix.height;
 	outFrameSizeU = outFrameSizeV = outFrameSizeY >> 2;
 
-	SrcPix.pPixel[0] = malloc((size_t)inFrameSizeY);
-	SrcPix.pPixel[1] = malloc((size_t)inFrameSizeU);
-	SrcPix.pPixel[2] = malloc((size_t)inFrameSizeV);
+	SrcPix.pPixel[0] = (uint8_t *)malloc((size_t)inFrameSizeY);
+	SrcPix.pPixel[1] = (uint8_t *)malloc((size_t)inFrameSizeU);
+	SrcPix.pPixel[2] = (uint8_t *)malloc((size_t)inFrameSizeV);
 
-	DstPix_a->pPixel[0] = malloc((size_t)outFrameSizeY);
-	DstPix_a->pPixel[1] = malloc((size_t)outFrameSizeU);
-	DstPix_a->pPixel[2] = malloc((size_t)outFrameSizeV);
+	DstPix_a->pPixel[0] = (uint8_t *)malloc((size_t)outFrameSizeY);
+	DstPix_a->pPixel[1] = (uint8_t *)malloc((size_t)outFrameSizeU);
+	DstPix_a->pPixel[2] = (uint8_t *)malloc((size_t)outFrameSizeV);
 
-	DstPix_b->pPixel[0] = malloc((size_t)outFrameSizeY);
-	DstPix_b->pPixel[1] = malloc((size_t)outFrameSizeU);
-	DstPix_b->pPixel[2] = malloc((size_t)outFrameSizeV);
+	DstPix_b->pPixel[0] = (uint8_t *)malloc((size_t)outFrameSizeY);
+	DstPix_b->pPixel[1] = (uint8_t *)malloc((size_t)outFrameSizeU);
+	DstPix_b->pPixel[2] = (uint8_t *)malloc((size_t)outFrameSizeV);
 
 	//calculate down sample ratio
 	ratio = getDownsampleRatio(inFrameSizeY, outFrameSizeY);
@@ -207,14 +207,16 @@ int main (int Argc, char **Argv){
 		return -1;
 	}
 
+#if 0
 	fseek(fIn, 0L, SEEK_END);
 	inFileSize = (int)ftell(fIn);
 
 	if (inFileSize <= 0){
-		fprintf(stderr, "input file is empty!\n");
+		fprintf(stderr, "Error: input file size error!\n");
 		return -1;
 	}
 	fseek(fIn, 0L, SEEK_SET);
+#endif
 
 #if defined(COMPARETWOFUNCS)
 	if (compareTwoFuns){
@@ -244,28 +246,22 @@ int main (int Argc, char **Argv){
 
 	index = getIndex[(int)ratio];
 
-	while (bufPost < inFileSize){
+	while (1){
 		//read input data
 		size = fread(SrcPix.pPixel[0], 1, (size_t)inFrameSizeY, fIn);
-		if (size < 0){
-			printf("can not read input file!\n");
-			return -1;
+		if (size <= 0){
+			break;
 		}
-		bufPost += size;
 
 		size = fread(SrcPix.pPixel[1], 1, (size_t)inFrameSizeU, fIn);
-		if (size < 0){
-			printf("can not read input file!\n");
-			return -1;
+		if (size <= 0){
+			break;
 		}
-		bufPost += size;
 
 		size = fread(SrcPix.pPixel[2], 1, (size_t)inFrameSizeV, fIn);
-		if (size < 0){
-			printf("can not read input file!\n");
-			return -1;
+		if (size <= 0){
+			break;
 		}
-		bufPost += size;
 
 		//downsample using general function
 		downsample_funs_c[index].pfGeneralRatioLuma(DstPix_a->pPixel[0], DstPix_a->width,

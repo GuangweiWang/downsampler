@@ -63,7 +63,7 @@ typedef GeneralDownsampleFunc*     PGeneralDownsampleFunc;
 
 SpecificDownsampleFunc   DyadicBilinearDownsampler_c;
 SpecificDownsampleFunc BilinearDownsamplerQuarter_c;
-SpecificDownsampleFunc BilinearDownsamplerThird_c;
+SpecificDownsampleFunc BilinearDownsamplerOneThird_c;
 GeneralDownsampleFunc GeneralBilinearFastDownsampler_c;
 GeneralDownsampleFunc GeneralBilinearAccurateDownsampler_c;
 
