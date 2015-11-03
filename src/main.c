@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "downsample.h"
+#include "measure_time.h"
 
 #define COMPARETWOFUNCS
 #define DUMPDETAILS
@@ -138,6 +139,9 @@ int main (int argc, char **argv){
 	uint64_t inFrameSizeY = 0, outFrameSizeY = 0;
 	uint64_t inFrameSizeU = 0, outFrameSizeU = 0;
 	uint64_t inFrameSizeV = 0, outFrameSizeV = 0;
+
+	double iStartTime_g = 0, iStartTime_s = 0;
+	double iTotalTime_g = 0, iTotalTime_s = 0;
 
 	//parse command parameter
 	if (argc != 8){
@@ -264,6 +268,7 @@ int main (int argc, char **argv){
 		}
 
 		//downsample using general function
+		iStartTime_g = WelsTime();
 		downsample_funs_c[index].pfGeneralRatioLuma(DstPix_a->pPixel[0], DstPix_a->width,
 			DstPix_a->width, DstPix_a->height,
 			SrcPix.pPixel[0], SrcPix.width, SrcPix.width, SrcPix.height);
@@ -275,10 +280,12 @@ int main (int argc, char **argv){
 		downsample_funs_c[index].pfGeneralRatioChroma(DstPix_a->pPixel[2], DstPix_a->width >> 1,
 			DstPix_a->width >> 1, DstPix_a->height >> 1,
 			SrcPix.pPixel[2], SrcPix.width >> 1, SrcPix.width >> 1, SrcPix.height >> 1);
+		iTotalTime_g += WelsTime() - iStartTime_g;
 
 #if  defined(COMPARETWOFUNCS)
 		//downsample using specific function
 		if (compareTwoFuns){
+			iStartTime_s = WelsTime();
 			downsample_funs_c[index].pfSpecificFunc(DstPix_b->pPixel[0], DstPix_b->width,
 				SrcPix.pPixel[0], SrcPix.width, SrcPix.width, SrcPix.height);
 
@@ -287,6 +294,7 @@ int main (int argc, char **argv){
 
 			downsample_funs_c[index].pfSpecificFunc(DstPix_b->pPixel[2], DstPix_b->width >> 1,
 				SrcPix.pPixel[2], SrcPix.width >> 1, SrcPix.width >> 1, SrcPix.height >> 1);
+			iTotalTime_s += WelsTime() - iStartTime_s;
 
 			compareOutput(flog, DstPix_a->pPixel[0], DstPix_b->pPixel[0], DstPix_a->width, DstPix_a->height, frameNum, "Y");
 			compareOutput(flog, DstPix_a->pPixel[1], DstPix_b->pPixel[1], DstPix_a->width >> 1, DstPix_a->height >> 1, frameNum, "U");
@@ -295,7 +303,7 @@ int main (int argc, char **argv){
 
 #endif
 		//saving frame
-		printf("saving frame %d\r", frameNum++);
+		printf("\tsaving frame %d\r", frameNum++);
 		fwrite(DstPix_a->pPixel[0], 1, (size_t)outFrameSizeY, fOutA);
 		fwrite(DstPix_a->pPixel[1], 1, (size_t)outFrameSizeU, fOutA);
 		fwrite(DstPix_a->pPixel[2], 1, (size_t)outFrameSizeV, fOutA);
@@ -333,6 +341,14 @@ int main (int argc, char **argv){
 	
 
 	printf("\ndown sample end\n");
+
+	// time cost
+	iTotalTime_g = iTotalTime_g/1e6;
+	iTotalTime_s = iTotalTime_s/1e6;
+	printf("-------------------- Time cost  ----------------------\n");
+	printf("General Function \n\t Total time:	%fsec => %fms/frame\n",iTotalTime_g, 1000 * iTotalTime_g/frameNum );
+	printf("Specific Function \n\t Total time:	%fsec => %fms/frame\n",iTotalTime_s, 1000 * iTotalTime_s/frameNum );
+	printf("------------------------------------------------------\n");
 
 	return 0;
 }

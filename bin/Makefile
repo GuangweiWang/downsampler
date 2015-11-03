@@ -2,8 +2,16 @@
 PROJ_NAME := downsampler
 
 
-all:
+all: $(PROJ_NAME)
+
+$(PROJ_NAME):
 	gcc ../src/downsampler.c ../src/downsamplefuncs.c -o $(PROJ_NAME)
+
+install:
+	cp $(PROJ_NAME) ~/WorkSpace/bin
+
+uninstall:
+	rm -rf ~/WorkSpace/bin/$(PROJ_NAME)
 
 demo:
 	./downsampler CAP_720P_RCOFF.yuv 1280 720 CAP_RCOff_4_general.yuv CAP_RCOff_4_specific.yuv 320 180
