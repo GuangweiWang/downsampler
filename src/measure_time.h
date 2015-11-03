@@ -1,6 +1,6 @@
 /*!
  * \copy
- *     Copyright (c)  2011-2013, Cisco Systems
+ *     Copyright (c)  2009-2013, Cisco Systems
  *     All rights reserved.
  *
  *     Redistribution and use in source and binary forms, with or without
@@ -28,51 +28,61 @@
  *     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *     POSSIBILITY OF SUCH DAMAGE.
  *
- * \file        :  downsample.h
  *
- * \brief       :  downsample class of wels video processor class
+ * \file    measure_time.h
  *
- * \date        :  2011/03/33
+ * \brief   time cost measure utilization
  *
- * \description :  1. rewrite the package code of downsample class
+ * \date    04/28/2009 Created
  *
  *************************************************************************************
  */
-#ifndef ASM_DEV_WS_downsample_h
-#define ASM_DEV_WS_downsample_h
+#ifndef WELS_TIME_COST_MEASURE_UTIL_H__
+#define WELS_TIME_COST_MEASURE_UTIL_H__
 
-#include <stdint.h>
+#include <stdlib.h>
 
-typedef struct {
-	uint8_t*     pPixel[3];
-	int          iStride[3];
-	int width;
-	int height;
-} sPixMap;
-
-typedef void (SpecificDownsampleFunc)(uint8_t* pDst, const int32_t kiDstStride,
-	uint8_t* pSrc, const int32_t kiSrcStride,
-	const int32_t kiSrcWidth, const int32_t kiSrcHeight);
-
-typedef void (GeneralDownsampleFunc)(uint8_t* pDst, const int32_t kiDstStride, const int32_t kiDstWidth,
-	const int32_t kiDstHeight,
-	uint8_t* pSrc, const int32_t kiSrcStride, const int32_t kiSrcWidth, const int32_t kiSrcHeight);
-
-typedef SpecificDownsampleFunc*    PSpecificDownsampleFunc;
-typedef GeneralDownsampleFunc*     PGeneralDownsampleFunc;
-
-SpecificDownsampleFunc   DyadicBilinearDownsampler_c;
-SpecificDownsampleFunc BilinearDownsamplerQuarter_c;
-SpecificDownsampleFunc BilinearDownsamplerOneThird_c;
-GeneralDownsampleFunc GeneralBilinearFastDownsampler_c;
-GeneralDownsampleFunc GeneralBilinearAccurateDownsampler_c;
-
-typedef struct {
-	// align_index: 0 = x32; 1 = x16; 2 = x8; 3 = common case left;
-	//PHalveDownsampleFunc          pfHalfAverage[4];
-	PSpecificDownsampleFunc       pfSpecificFunc;
-	PGeneralDownsampleFunc        pfGeneralRatioLuma;
-	PGeneralDownsampleFunc        pfGeneralRatioChroma;
-} SDownsampleFuncs;
-
+//#include "typedefs.h"
+#ifndef _WIN32
+#include <sys/time.h>
+#else
+#include <windows.h>
 #endif
+#include <time.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif//__cplusplus
+
+/*!
+ * \brief   time cost measure utilization
+ * \param   void
+ * \return  time elapsed since run (unit: microsecond)
+ */
+
+static inline int64_t WelsTime (void) {
+#ifndef _WIN32
+  struct timeval tv_date;
+
+  gettimeofday (&tv_date, NULL);
+  return ((int64_t) tv_date.tv_sec * 1000000 + (int64_t) tv_date.tv_usec);
+#else
+  static int64_t iMtimeFreq = 0;
+  int64_t iMtimeCur = 0;
+  int64_t iResult = 0;
+  if (!iMtimeFreq) {
+    QueryPerformanceFrequency ((LARGE_INTEGER*)&iMtimeFreq);
+    if (!iMtimeFreq)
+      iMtimeFreq = 1;
+  }
+  QueryPerformanceCounter ((LARGE_INTEGER*)&iMtimeCur);
+  iResult = (int64_t) ((double)iMtimeCur * 1e6 / (double)iMtimeFreq + 0.5);
+  return iResult;
+#endif//_WIN32
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif//WELS_TIME_COST_MEASURE_UTIL_H__
